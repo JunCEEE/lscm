@@ -1,11 +1,9 @@
 // LSCM.c -- Large Single Crystal Maker
-// gcc LSCM.c -o LSCM
+// gcc LSCM.c -std=c99 -o LSCM
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
+#include <getopt.h>
 
 
 struct args_t
