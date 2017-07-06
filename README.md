@@ -18,6 +18,7 @@ Example: ./LSCM 50 50 50 3.615 -f -o singleCu.custom
     -f, FCC 
     -b, BCC 
     -n, Nacl 
+	-d, Diamond
     -o, outputfile
     -h, print help
 ```
