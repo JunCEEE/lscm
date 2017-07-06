@@ -14,7 +14,7 @@ struct args_t
 	double diameter;
 }args={NULL,0,0,0};
 
-static const char *optString = "fbno:s:h?";
+static const char *optString = "fbndo:s:h?";
 
 void get_curr_time()
 {
@@ -114,6 +114,18 @@ void BCC(char* output, int* nc, double a)
 	writeAtoms(output,nc,a,una,x,y,z,symbol);
 }
 
+void Diamond(char* output, int* nc, double a)
+{
+	printf("Diamond\n");
+	int una = 8;
+	double x[8] = {0.00,0.50,0.50,0.00,0.25,0.75,0.75,0.25};
+	double y[8] = {0.00,0.50,0.00,0.50,0.25,0.75,0.25,0.75};
+	double z[8] = {0.00,0.00,0.50,0.50,0.25,0.25,0.75,0.75};
+	int symbol[8] = {1,1,1,1,1,1,1,1};
+	writeAtoms(output,nc,a,una,x,y,z,symbol);
+}
+
+
 void displayUsage(char* bin)
 {
 	printf("Usage: %s nx ny nz a [structure] -o output\n", bin);
@@ -121,6 +133,7 @@ void displayUsage(char* bin)
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
+	puts( "    -d, Diamond " );
 	puts( "    -n, Nacl " );
 	puts( "    -o, outputfile" );
 	puts( "    -h, print help" );
@@ -147,6 +160,7 @@ int main(int argc, char* argv[])
     		case 'f': args.mode = 1; break;
     		case 'b': args.mode = 2; break;
     		case 'n': args.mode = 3; break;
+    		case 'd': args.mode = 4; break;
     		case 'o': args.output = optarg; break;
     		case 's': args.is_s = 1; args.diameter = atof(optarg); break;
 			case 'h': // just go to '?'
@@ -168,6 +182,7 @@ int main(int argc, char* argv[])
 		case 1 : FCC(args.output,nc,a); break;
 		case 2 : BCC(args.output,nc,a); break;
 		case 3 : NaCl(args.output,nc,a); break;
+		case 4 : Diamond(args.output,nc,a); break;
 		default:
 			{
     			displayUsage(argv[0]); 
