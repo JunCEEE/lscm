@@ -137,6 +137,7 @@ struct RR_data
 	double* z;
 	int* symbol;
 	double aa[3];
+	double lo[3];
 }xyz_data;
 
 void read_data(char *input)
@@ -224,6 +225,9 @@ void read_data(char *input)
 	xyz_data.aa[0] = aa[0];
 	xyz_data.aa[1] = aa[1];
 	xyz_data.aa[2] = aa[2];
+	xyz_data.lo[0] = xlo;
+	xyz_data.lo[1] = ylo;
+	xyz_data.lo[2] = zlo;
 }
 
 
@@ -245,7 +249,7 @@ void RR(char* input, char* output, int* nc)
 	double center[3];
 	for (int i = 0; i < 3; i++)
 	{
-		fprintf(fout,"0 %f\n",(nc[i])*xyz_data.aa[i]);
+		fprintf(fout,"%f %f\n",xyz_data.lo[i],xyz_data.lo[i]+nc[i]*xyz_data.aa[i]);
 	}
 	fprintf(fout,"ITEM: ATOMS type x y z\n");
 
