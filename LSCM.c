@@ -2,6 +2,7 @@
 // gcc LSCM.c -std=c99 -o LSCM
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <getopt.h>
 
@@ -9,12 +10,15 @@
 struct args_t
 {
 	char* output; // -o output filename
+	char* input; // -r input filename
 	int mode;
 	int is_s;
 	double diameter;
-}args={NULL,0,0,0};
+	int nc[3];
+	double a;
+}args={NULL,NULL};
 
-static const char *optString = "fbndo:s:h?";
+static const char *optString = "x:y:z:r:fbndo:s:h?";
 
 void get_curr_time()
 {
@@ -125,16 +129,149 @@ void Diamond(char* output, int* nc, double a)
 	writeAtoms(output,nc,a,una,x,y,z,symbol);
 }
 
+struct RR_data
+{
+	int una;
+	double* x;
+	double* y;
+	double* z;
+	int* symbol;
+	double aa[3];
+}xyz_data;
+
+void read_data(char *input)
+{
+	char buffer[255];
+	int n = 0;
+	int na,ne;
+	int r;
+	double xlo,xhi,ylo,yhi,zlo,zhi;
+	double aa[3];
+    
+    FILE * fin = fopen(input,"r");
+    int skip_na = 0;
+    // bool skip_box = 0;
+
+	while (fgets(buffer,255,fin) != NULL )
+	{
+		if (!skip_na)
+		{
+			r = sscanf(buffer,"%i %s",&na,buffer);
+			if (r == 2)
+			{
+				fgets(buffer,255,fin);
+				sscanf(buffer,"%i %*s",&ne);
+				skip_na = 1;
+				
+				fgets(buffer,255,fin);
+				fgets(buffer,255,fin);
+				sscanf(buffer,"%lf %lf",&xlo,&xhi);
+				aa[0] = xhi-xlo;
+				fgets(buffer,255,fin);
+				sscanf(buffer,"%lf %lf",&ylo,&yhi);
+				aa[1] = yhi-ylo;
+				fgets(buffer,255,fin);
+				sscanf(buffer,"%lf %lf",&zlo,&zhi);
+				aa[2] = zhi-zlo;
+				continue;
+			}
+		}
+	    else if (strncmp(buffer,"Atoms",5) == 0)
+		{
+			//fgets(buffer,255,fin);
+			break;
+		}
+	}
+
+	double *x = malloc(na * sizeof(double));
+	double *y = malloc(na * sizeof(double));
+	double *z = malloc(na * sizeof(double));
+	int *symbol = malloc(na * sizeof(int));
+
+	while (fgets(buffer,255,fin) != NULL )
+	{
+		//cout << buffer;
+		if(buffer[0] == '\n' || buffer[0] == '\r' || buffer[0]== '\0') continue;  
+
+		sscanf(buffer,"%*s %i""%lf" "%lf" "%lf",&symbol[n],&x[n],&y[n],&z[n]);
+		if (symbol[n] > ne)
+		{
+			printf("Error: only %i element types defined, %i element types detected!\n",ne,symbol[n]);
+			exit(0);
+		}
+		n++;
+	}
+
+	fclose(fin);
+
+	if (n < na)
+	{
+		printf("Error: only %i atoms found. %i atoms declared in this file.\n",n,na);
+		exit(0);
+	}
+
+	xyz_data.una = na;
+	xyz_data.x = x;
+	xyz_data.y = y;
+	xyz_data.z = z;
+	xyz_data.symbol = symbol;
+	xyz_data.aa[0] = aa[0];
+	xyz_data.aa[1] = aa[1];
+	xyz_data.aa[2] = aa[2];
+}
+
+
+
+void RR(char* input, char* output, int* nc)
+{
+	printf("Read and replicate\n");
+	read_data(input);
+
+	unsigned long long na = (unsigned long long)  xyz_data.una*nc[0]*nc[1]*nc[2];
+	FILE *fout = fopen(output,"w");
+	printf("%llu atoms\n",na);
+	//cout << nc[0] << " " << nc[1] << " " << nc[2] << " " << endl; 
+	//cout << "Atom number = " << na << endl; 
+	fprintf(fout,"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS:\n");
+	fprintf(fout,"%llu\n",na);
+	fprintf(fout,"ITEM: BOX BOUNDS pp pp pp\n"); 
+	
+	double center[3];
+	for (int i = 0; i < 3; i++)
+	{
+		fprintf(fout,"0 %f\n",(nc[i])*xyz_data.aa[i]);
+	}
+	fprintf(fout,"ITEM: ATOMS type x y z\n");
+
+	
+	unsigned long long dna = 0;
+	double xx, yy, zz;
+	for (int i = 0; i < nc[0]; i++)
+		for (int j = 0; j < nc[1]; j++)
+			for (int k = 0; k < nc[2]; k++)
+			{
+				for (int l = 0; l < xyz_data.una; l++)
+				{
+					xx = xyz_data.x[l] + i*xyz_data.aa[0];
+					yy = xyz_data.y[l] + j*xyz_data.aa[1];
+					zz = xyz_data.z[l] + k*xyz_data.aa[2];
+					fprintf(fout,"%i %f %f %f\n",xyz_data.symbol[l],xx,yy,zz);
+				}
+			}
+	
+	fclose(fout);
+}
 
 void displayUsage(char* bin)
 {
-	printf("Usage: %s nx ny nz a [structure] -o output\n", bin);
-	printf("Example: %s 50 50 50 3.615 -f -o singleCu.custom\n",bin);
+	printf("Usage: %s   [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output\n", bin);
+	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
 	puts( "    -d, Diamond " );
 	puts( "    -n, Nacl " );
+	puts( "    -r, Read and replicate " );
 	puts( "    -o, outputfile" );
 	puts( "    -h, print help" );
 }
@@ -143,25 +280,22 @@ void displayUsage(char* bin)
 
 int main(int argc, char* argv[])
 {
-	if (argc < 8)
-	{
-		displayUsage(argv[0]);
-		return 0;
-	}
-
-	int nc[3] = {atoi(argv[1]),atoi(argv[2]),atoi(argv[3])};
-	double a = atof(argv[4]);
 
 	int opt;
     while ((opt = getopt (argc, argv, optString)) != -1)
     {
     	switch(opt)
     	{
+    		case 'x': args.nc[0] = atof(optarg); break;
+    		case 'y': args.nc[1] = atof(optarg); break;
+    		case 'z': args.nc[2] = atof(optarg); break;
+    		case 'a': args.a = atof(optarg); break;
     		case 'f': args.mode = 1; break;
     		case 'b': args.mode = 2; break;
     		case 'n': args.mode = 3; break;
     		case 'd': args.mode = 4; break;
-    		case 'o': args.output = optarg; break;
+    		case 'r': args.mode = 5;args.input = optarg; break;
+    		case 'o': args.output = optarg;break;
     		case 's': args.is_s = 1; args.diameter = atof(optarg); break;
 			case 'h': // just go to '?'
 			case '?': 
@@ -174,15 +308,22 @@ int main(int argc, char* argv[])
     	}
     }
 
+    if (args.mode == 5 && args.nc[0] == 0 && args.nc[1] == 0 && args.nc[2] == 0)
+    {
+    	displayUsage(argv[0]);
+    	return(0); 
+    }
+
 	get_curr_time();
 	clock_t begin = clock();
 
 	switch(args.mode)
 	{
-		case 1 : FCC(args.output,nc,a); break;
-		case 2 : BCC(args.output,nc,a); break;
-		case 3 : NaCl(args.output,nc,a); break;
-		case 4 : Diamond(args.output,nc,a); break;
+		case 1 : FCC(args.output,args.nc,args.a); break;
+		case 2 : BCC(args.output,args.nc,args.a); break;
+		case 3 : NaCl(args.output,args.nc,args.a); break;
+		case 4 : Diamond(args.output,args.nc,args.a); break;
+		case 5 : RR(args.input,args.output,args.nc); break;
 		default:
 			{
     			displayUsage(argv[0]); 

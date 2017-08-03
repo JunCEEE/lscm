@@ -12,13 +12,14 @@ $ gcc LSCM.c -std=c99 -o LSCM
 ## Usage
 
 ```
-Usage: ./LSCM nx ny nz a [structure] -o output
-Example: ./LSCM 50 50 50 3.615 -f -o singleCu.custom
+Usage: ./LSCM   [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output
+Example: ./LSCM -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom
     -s, Spherical shape 
     -f, FCC 
     -b, BCC 
+    -d, Diamond 
     -n, Nacl 
-	-d, Diamond
+    -r, Read and replicate 
     -o, outputfile
     -h, print help
 ```
