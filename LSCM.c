@@ -18,7 +18,7 @@ struct args_t
 	double a;
 }args={NULL,NULL};
 
-static const char *optString = "x:y:z:r:fbndo:s:h?";
+static const char *optString = "a:x:y:z:r:fbndo:s:h?";
 
 void get_curr_time()
 {
