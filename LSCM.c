@@ -150,6 +150,7 @@ void read_data(char *input)
     
     FILE * fin = fopen(input,"r");
     int skip_na = 0;
+    int skip_aa = 0;
     // bool skip_box = 0;
 
 	while (fgets(buffer,255,fin) != NULL )
@@ -162,10 +163,14 @@ void read_data(char *input)
 				fgets(buffer,255,fin);
 				sscanf(buffer,"%i %*s",&ne);
 				skip_na = 1;
-				
-				fgets(buffer,255,fin);
-				fgets(buffer,255,fin);
-				sscanf(buffer,"%lf %lf",&xlo,&xhi);
+				continue;
+			}
+		}
+		else if (!skip_aa)
+		{
+			r = sscanf(buffer,"%lf %lf %s %s",&xlo,&xhi,buffer,buffer);
+			if (r == 4)
+			{
 				aa[0] = xhi-xlo;
 				fgets(buffer,255,fin);
 				sscanf(buffer,"%lf %lf",&ylo,&yhi);
@@ -173,6 +178,7 @@ void read_data(char *input)
 				fgets(buffer,255,fin);
 				sscanf(buffer,"%lf %lf",&zlo,&zhi);
 				aa[2] = zhi-zlo;
+				skip_aa = 1;
 				continue;
 			}
 		}
