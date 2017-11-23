@@ -1,12 +1,13 @@
 # LSCM
 Large Single Crystal Maker
+v1.1
 
 ## Installation
 
 Compile
 
 ```bash
-$ gcc LSCM.c -std=c99 -o LSCM
+$ make
 ```
 
 ## Usage
