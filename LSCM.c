@@ -351,7 +351,7 @@ void displayUsage(char* bin)
 	puts("v1.1");
 	printf("Usage: %s   [-p c/a ratio]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output\n", bin);
 	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
-	printf("Example: %s -p 1.603 -a 3.23 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
+	printf("Example: %s -p 1.603 -a 3.23 -x 50 -y 50 -z 50  -o singleMg.custom\n",bin);
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
