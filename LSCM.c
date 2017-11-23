@@ -175,15 +175,15 @@ void BCC(char* output, int* nc, double a)
 	writeAtoms(output,nc,a,una,x,y,z,symbol);
 }
 
-void HCP(double caratio, char* output, int* nc, double a)
+void HCP(double c, char* output, int* nc, double a)
 {
 	printf("HCP\n");
-	printf("Lattice constant = %f\n",a);
-	printf("c/a ratio = %f\n",caratio);
+	printf("a =  b = %f\n",a);
+	printf("c = %f\n",c);
 	double lc[3];
 	lc[0] = a * sqrt(3);
 	lc[1] = a;
-	lc[2] = a * caratio;
+	lc[2] = c;
 	int una = 4;
 	double x[4] = {0.33333,0.16667,0.66667,0.833330};
 	double y[4] = {0.0,0.5,0.0,0.5};
@@ -349,9 +349,9 @@ void RR(char* input, char* output, int* nc)
 void displayUsage(char* bin)
 {
 	puts("v1.1");
-	printf("Usage: %s   [-p c/a ratio]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output\n", bin);
+	printf("Usage: %s   [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output\n", bin);
 	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
-	printf("Example: %s -p 1.603 -a 3.23 -x 50 -y 50 -z 50  -o singleMg.custom\n",bin);
+	printf("Example: %s -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30  -o singleMg.custom\n",bin);
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
