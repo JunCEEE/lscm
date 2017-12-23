@@ -12,14 +12,21 @@ struct args_t
 {
 	char* output; // -o output filename
 	char* input; // -r input filename
+	int outMode; // output mode --cfg --custom
 	int mode;
 	int is_s;
 	double diameter;
 	int nc[3];
 	double a;
-}args={NULL,NULL};
+}args={NULL,NULL,0};
 
 static const char *optString = "p:a:x:y:z:r:fbndo:s:h?";
+
+
+static const struct option longOpts[] = {
+    { "custom", no_argument, NULL,0},
+    { "cfg", no_argument, NULL,1},
+};
 
 void get_curr_time()
 {
@@ -30,80 +37,52 @@ void get_curr_time()
 	printf("%s", asctime(timeinfo));
 }
 
-void writeAtoms(char* output, int *nc, double a, int una, double *x, double *y, double *z, int *symbol)
+void writeAtoms(char* output, int *nc, double *lc, int una, double *x, double *y, double *z, int *symbol)
 {
 	unsigned long long na = (unsigned long long)  una*nc[0]*nc[1]*nc[2];
 	FILE *fout = fopen(output,"w");
-	printf("%llu atoms\n",na);
+	double box[3];
+
+
+	double center[3];
+	if (args.outMode == 0)
+	{
+		printf("%llu atoms\n",na);
 	//cout << nc[0] << " " << nc[1] << " " << nc[2] << " " << endl; 
 	//cout << "Atom number = " << na << endl; 
-	fprintf(fout,"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS:\n");
-	fprintf(fout,"%llu\n",na);
-	fprintf(fout,"ITEM: BOX BOUNDS pp pp pp\n"); 
-	
-	double center[3];
-	for (int i = 0; i < 3; i++)
-	{
-		fprintf(fout,"0 %f\n",(nc[i])*a);
-		center[i] = nc[i]*a/2;
+		fprintf(fout,"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS:\n");
+		fprintf(fout,"%llu\n",na);
+		fprintf(fout,"ITEM: BOX BOUNDS pp pp pp\n"); 
+
+		double center[3];
+		for (int i = 0; i < 3; i++)
+		{
+			fprintf(fout,"0 %f\n",(nc[i])*lc[i]);
+			center[i] = nc[i]*lc[i]/2;
+		}
+		fprintf(fout,"ITEM: ATOMS type x y z\n");
 	}
-	fprintf(fout,"ITEM: ATOMS type x y z\n");
-
-	
-	unsigned long long dna = 0;
-	double xx, yy, zz;
-	for (int i = 0; i < nc[0]; i++)
-		for (int j = 0; j < nc[1]; j++)
-			for (int k = 0; k < nc[2]; k++)
-			{
-				for (int l = 0; l < una; l++)
-				{
-					xx = (i + x[l])*a;
-					yy = (j + y[l])*a;
-					zz = (k + z[l])*a;
-					if (args.is_s && ( (xx-center[0])*(xx-center[0]) + (yy-center[1])*(yy-center[1]) + (zz-center[2])*(zz-center[2]) > args.diameter*args.diameter/4 ) ) 
-					{
-						dna++;
-						continue;
-					}
-					else 
-					{
-						fprintf(fout,"%i %f %f %f\n",symbol[l],xx,yy,zz);
-					}
-				}
-			}
-	
-	fclose(fout);
-	if (args.is_s)
+	else if (args.outMode == 1)
 	{
-		printf("%llu atoms deleted, %llu atoms left.\n",dna,na-dna);
-		char buffer[255];
-		sprintf(buffer,"sed -i '4c%llu' %s\n",na-dna,output);
-		printf("%s",buffer);
-		system(buffer);
+		for (int i = 0; i < 3; i++)
+		{
+			box[i] = nc[i]*lc[i];
+			center[i] = box[i]/2;
+		}
+		fprintf(fout,"Number of particles = %llu\n",na);
+		fprintf(fout,"A = 1 Angstrom (basic length-scale)\n"); 
+		fprintf(fout,"H0(1,1) = %f A\n",box[0]);
+		fprintf(fout,"H0(1,2) = 0 A\n"); 
+		fprintf(fout,"H0(1,3) = 0 A\n"); 
+		fprintf(fout,"H0(2,1) = 0 A\n"); 
+		fprintf(fout,"H0(2,2) = %f A\n",box[1]); 
+		fprintf(fout,"H0(2,3) = 0 A\n"); 
+		fprintf(fout,"H0(3,1) = 0 A\n"); 
+		fprintf(fout,"H0(3,2) = 0 A\n"); 
+		fprintf(fout,"H0(3,3) = %f A\n",box[2]); 
+		fprintf(fout,".NO_VELOCITY.\nentry_count = 3\n");
+		fprintf(fout,"63.55\nCu\n");
 	}
-}
-
-void writeAtomsTri(char* output, int *nc, double *lc, int una, double *x, double *y, double *z, int *symbol)
-{
-	unsigned long long na = (unsigned long long)  una*nc[0]*nc[1]*nc[2];
-	FILE *fout = fopen(output,"w");
-	printf("%llu atoms\n",na);
-	//cout << nc[0] << " " << nc[1] << " " << nc[2] << " " << endl; 
-	//cout << "Atom number = " << na << endl; 
-	fprintf(fout,"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS:\n");
-	fprintf(fout,"%llu\n",na);
-	fprintf(fout,"ITEM: BOX BOUNDS pp pp pp\n"); 
-	
-	double center[3];
-	for (int i = 0; i < 3; i++)
-	{
-		fprintf(fout,"0 %f\n",(nc[i])*lc[i]);
-		center[i] = nc[i]*lc[i]/2;
-	}
-
-
-	fprintf(fout,"ITEM: ATOMS type x y z\n");
 
 	
 	unsigned long long dna = 0;
@@ -124,7 +103,14 @@ void writeAtomsTri(char* output, int *nc, double *lc, int una, double *x, double
 					}
 					else 
 					{
-						fprintf(fout,"%i %f %f %f\n",symbol[l],xx,yy,zz);
+						if (args.outMode == 0)
+						{
+							fprintf(fout,"%i %f %f %f\n",symbol[l],xx,yy,zz);
+						}
+						else if (args.outMode == 1)
+						{
+							fprintf(fout,"%f %f %f\n",xx/box[0],yy/box[1],zz/box[2]);
+						}
 					}
 				}
 			}
@@ -134,11 +120,70 @@ void writeAtomsTri(char* output, int *nc, double *lc, int una, double *x, double
 	{
 		printf("%llu atoms deleted, %llu atoms left.\n",dna,na-dna);
 		char buffer[255];
-		sprintf(buffer,"sed -i '4c%llu' %s\n",na-dna,output);
+		if (args.outMode == 0)
+			sprintf(buffer,"sed -i '4c%llu' %s\n",na-dna,output);
+		else if (args.outMode == 1)
+			sprintf(buffer,"sed -i '2cNumber of particles = %llu' %s\n",na-dna,output);
 		printf("%s",buffer);
 		system(buffer);
 	}
 }
+
+// void writeAtomsTri(char* output, int *nc, double *lc, int una, double *x, double *y, double *z, int *symbol)
+// {
+// 	unsigned long long na = (unsigned long long)  una*nc[0]*nc[1]*nc[2];
+// 	FILE *fout = fopen(output,"w");
+// 	printf("%llu atoms\n",na);
+// 	//cout << nc[0] << " " << nc[1] << " " << nc[2] << " " << endl; 
+// 	//cout << "Atom number = " << na << endl; 
+// 	fprintf(fout,"ITEM: TIMESTEP\n0\nITEM: NUMBER OF ATOMS:\n");
+// 	fprintf(fout,"%llu\n",na);
+// 	fprintf(fout,"ITEM: BOX BOUNDS pp pp pp\n"); 
+	
+// 	double center[3];
+// 	for (int i = 0; i < 3; i++)
+// 	{
+// 		fprintf(fout,"0 %f\n",(nc[i])*lc[i]);
+// 		center[i] = nc[i]*lc[i]/2;
+// 	}
+
+
+// 	fprintf(fout,"ITEM: ATOMS type x y z\n");
+
+	
+// 	unsigned long long dna = 0;
+// 	double xx, yy, zz;
+// 	for (int i = 0; i < nc[0]; i++)
+// 		for (int j = 0; j < nc[1]; j++)
+// 			for (int k = 0; k < nc[2]; k++)
+// 			{
+// 				for (int l = 0; l < una; l++)
+// 				{
+// 					xx = (i + x[l])*lc[0];
+// 					yy = (j + y[l])*lc[1];
+// 					zz = (k + z[l])*lc[2];
+// 					if (args.is_s && ( (xx-center[0])*(xx-center[0]) + (yy-center[1])*(yy-center[1]) + (zz-center[2])*(zz-center[2]) > args.diameter*args.diameter/4 ) ) 
+// 					{
+// 						dna++;
+// 						continue;
+// 					}
+// 					else 
+// 					{
+// 						fprintf(fout,"%i %f %f %f\n",symbol[l],xx,yy,zz);
+// 					}
+// 				}
+// 			}
+	
+// 	fclose(fout);
+// 	if (args.is_s)
+// 	{
+// 		printf("%llu atoms deleted, %llu atoms left.\n",dna,na-dna);
+// 		char buffer[255];
+// 		sprintf(buffer,"sed -i '4c%llu' %s\n",na-dna,output);
+// 		printf("%s",buffer);
+// 		system(buffer);
+// 	}
+// }
 
 void NaCl(char* output, int* nc, double a)
 {
@@ -148,7 +193,8 @@ void NaCl(char* output, int* nc, double a)
 	double y[8] = {0.0,0.5,0.0,0.5,0.5,0.0,0.5,0.0};
 	double z[8] = {0.0,0.0,0.5,0.5,0.5,0.5,0.0,0.0};
 	int symbol[8] = {1,1,1,1,2,2,2,2}; 
-	writeAtoms(output,nc,a,una,x,y,z,symbol);
+	double lc[3] = {a,a,a};
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
 }
 
 
@@ -161,7 +207,8 @@ void FCC(char* output, int* nc, double a)
 	double y[4] = {0.0,0.5,0.0,0.5};
 	double z[4] = {0.0,0.0,0.5,0.5};
 	int symbol[4] = {1,1,1,1};
-	writeAtoms(output,nc,a,una,x,y,z,symbol);
+	double lc[3] = {a,a,a};
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
 }
 
 void BCC(char* output, int* nc, double a)
@@ -172,7 +219,8 @@ void BCC(char* output, int* nc, double a)
 	double y[2] = {0.0,0.5};
 	double z[2] = {0.0,0.5};
 	int symbol[2] = {1,1};
-	writeAtoms(output,nc,a,una,x,y,z,symbol);
+	double lc[3] = {a,a,a};
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
 }
 
 void HCP(double c, char* output, int* nc, double a)
@@ -189,7 +237,7 @@ void HCP(double c, char* output, int* nc, double a)
 	double y[4] = {0.0,0.5,0.0,0.5};
 	double z[4] = {0.25,0.75,0.75,0.25};
 	int symbol[4] = {1,1,1,1};
-	writeAtomsTri(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
 }
 
 void Diamond(char* output, int* nc, double a)
@@ -200,7 +248,8 @@ void Diamond(char* output, int* nc, double a)
 	double y[8] = {0.00,0.50,0.00,0.50,0.25,0.75,0.25,0.75};
 	double z[8] = {0.00,0.00,0.50,0.50,0.25,0.25,0.75,0.75};
 	int symbol[8] = {1,1,1,1,1,1,1,1};
-	writeAtoms(output,nc,a,una,x,y,z,symbol);
+	double lc[3] = {a,a,a};
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
 }
 
 struct RR_data
@@ -348,10 +397,10 @@ void RR(char* input, char* output, int* nc)
 
 void displayUsage(char* bin)
 {
-	puts("v1.1");
-	printf("Usage: %s   [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz -o output\n", bin);
+	puts("v1.2");
+	printf("Usage: %s  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] -o output\n", bin);
 	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
-	printf("Example: %s -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30  -o singleMg.custom\n",bin);
+	printf("Example: %s -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg\n",bin);
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
@@ -361,6 +410,8 @@ void displayUsage(char* bin)
 	puts( "    -r, Read and replicate LAMMPS DATA" );
 	puts( "    -o, outputfile" );
 	puts( "    -h, print help" );
+	puts( "    --cfg, output in .cfg format" );
+	puts( "    --custom, output in LAMMPS .custom format" );
 }
 
 
@@ -368,8 +419,9 @@ void displayUsage(char* bin)
 int main(int argc, char* argv[])
 {
 
+	int longIndex;
 	int opt;
-    while ((opt = getopt (argc, argv, optString)) != -1)
+    while ((opt = getopt_long (argc, argv, optString, longOpts, &longIndex)) != -1)
     {
     	switch(opt)
     	{
@@ -386,6 +438,8 @@ int main(int argc, char* argv[])
     		case 'o': args.output = optarg;break;
     		case 's': args.is_s = 1; args.diameter = atof(optarg); break;
 			case 'h': // just go to '?'
+			case 0: args.outMode = 0; break; // custom
+			case 1: args.outMode = 1; break; // cfg
 			case '?': 
 			default:
     			{
