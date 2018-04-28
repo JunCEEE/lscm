@@ -13,19 +13,24 @@ struct args_t
 	char* output; // -o output filename
 	char* input; // -r input filename
 	int outMode; // output mode --cfg --custom
+	double a;
+	double b;
+	double c;
 	int mode;
 	int is_s;
 	double diameter;
 	int nc[3];
-	double a;
-}args={NULL,NULL,0};
+}args={NULL,NULL,0,-1,-1,-1};
 
-static const char *optString = "p:a:x:y:z:r:fbndo:s:h?";
+static const char *optString = "p:a:x:y:z:r:fbcndo:s:h?";
 
 
 static const struct option longOpts[] = {
     { "custom", no_argument, NULL,0},
     { "cfg", no_argument, NULL,1},
+    { "pa", required_argument, NULL,2},
+    { "pb", required_argument, NULL,3},
+    { "pc", required_argument, NULL,4},
 };
 
 void get_curr_time()
@@ -198,6 +203,17 @@ void NaCl(char* output, int* nc, double a)
 }
 
 
+void SP(char* output, int* nc, double a,double b, double c)
+{
+	printf("SP: Simple Cubic\n");
+	int una = 1;
+	double x[1] = {0.0};
+	double y[1] = {0.0};
+	double z[1] = {0.0};
+	int symbol[1] = {1}; 
+	double lc[3] = {a,b,c};
+	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+}
 
 void FCC(char* output, int* nc, double a)
 {
@@ -401,6 +417,7 @@ void displayUsage(char* bin)
 	printf("Usage: %s  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] -o output\n", bin);
 	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
 	printf("Example: %s -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg\n",bin);
+	puts( "    -c, cP: simple cubic " );
 	puts( "    -s, Spherical shape " );
 	puts( "    -f, FCC " );
 	puts( "    -b, BCC " );
@@ -433,6 +450,7 @@ int main(int argc, char* argv[])
     		case 'b': args.mode = 2; break;
     		case 'n': args.mode = 3; break;
     		case 'd': args.mode = 4; break;
+    		case 'c': args.mode = 7; break;
     		case 'p': args.mode = 6;args.input = optarg; break;
     		case 'r': args.mode = 5;args.input = optarg; break;
     		case 'o': args.output = optarg;break;
@@ -440,6 +458,9 @@ int main(int argc, char* argv[])
 			case 'h': // just go to '?'
 			case 0: args.outMode = 0; break; // custom
 			case 1: args.outMode = 1; break; // cfg
+			case 2: args.a = atof(optarg); break; // Lattice parameter a
+			case 3: args.b = atof(optarg); break; // Lattice parameter b
+			case 4: args.c = atof(optarg); break; // Lattice parameter c
 			case '?': 
 			default:
     			{
@@ -465,6 +486,7 @@ int main(int argc, char* argv[])
 		case 2 : BCC(args.output,args.nc,args.a); break;
 		case 3 : NaCl(args.output,args.nc,args.a); break;
 		case 4 : Diamond(args.output,args.nc,args.a); break;
+		case 7 : if(args.b == -1 || args.c == -1)  {SP(args.output,args.nc,args.a,args.a,args.a);} else {SP(args.output,args.nc,args.a,args.b,args.c);}      break;
 		case 5 : RR(args.input,args.output,args.nc); break;
 		case 6 : HCP(atof(args.input),args.output,args.nc,args.a); break;
 		default:
