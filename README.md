@@ -36,6 +36,3 @@ Example: ./LSCM -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg
 4. Push to the branch: `git push origin my-new-feature`
 5. Submit a pull request :D
 
-## Credits
-
-Copyright (C) 2017 [Juncheng E](mailto:jce@pims.ac.cn)
