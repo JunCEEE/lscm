@@ -13,7 +13,7 @@ $ make
 ## Usage
 
 ```
-Usage: ./LSCM  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] -o output
+Usage: ./LSCM  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] [--data]  -o output
 Example: ./LSCM -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom
 Example: ./LSCM -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg
     -s, Spherical shape 
@@ -26,6 +26,7 @@ Example: ./LSCM -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg
     -h, print help
 	--cfg, output in .cfg format
 	--custom, output in LAMMPS  .custom format
+	--data, output in .data format
 ```
 
 ## Contributing

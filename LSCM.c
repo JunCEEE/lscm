@@ -28,6 +28,7 @@ static const char *optString = "p:a:x:y:z:r:fbcndo:s:h?";
 static const struct option longOpts[] = {
     { "custom", no_argument, NULL,0},
     { "cfg", no_argument, NULL,1},
+    { "data", no_argument, NULL,5},
     { "pa", required_argument, NULL,2},
     { "pb", required_argument, NULL,3},
     { "pc", required_argument, NULL,4},
@@ -42,7 +43,7 @@ void get_curr_time()
 	printf("%s", asctime(timeinfo));
 }
 
-void writeAtoms(char* output, int *nc, double *lc, int una, double *x, double *y, double *z, int *symbol)
+void writeAtoms(char* output, int *nc, double *lc, int una, double *x, double *y, double *z, int *symbol, int ne)
 {
 	unsigned long long na = (unsigned long long)  una*nc[0]*nc[1]*nc[2];
 	FILE *fout = fopen(output,"w");
@@ -88,10 +89,35 @@ void writeAtoms(char* output, int *nc, double *lc, int una, double *x, double *y
 		fprintf(fout,".NO_VELOCITY.\nentry_count = 3\n");
 		fprintf(fout,"63.55\nCu\n");
 	}
+	else if (args.outMode == 2)
+	{
+		printf("%llu atoms\n",na);
+	//cout << nc[0] << " " << nc[1] << " " << nc[2] << " " << endl; 
+	//cout << "Atom number = " << na << endl; 
+		fprintf(fout,"# LAMMPS data file written by LSCM\n");
+		fprintf(fout,"%llu atoms\n",na);
+		fprintf(fout,"%i atom types\n",ne); 
+
+		double center[3];
+		for (int i = 0; i < 3; i++)
+		{
+			center[i] = nc[i]*lc[i]/2;
+		}
+		fprintf(fout,"0.0 %f xlo xhi\n",(nc[0])*lc[0]);
+		fprintf(fout,"0.0 %f ylo yhi\n",(nc[1])*lc[1]);
+		fprintf(fout,"0.0 %f zlo zhi\n",(nc[2])*lc[2]);
+
+		fprintf(fout,"\n");
+
+		fprintf(fout,"Atoms # atomic\n");
+
+		fprintf(fout,"\n");
+	}
 
 	
 	unsigned long long dna = 0;
 	double xx, yy, zz;
+	int n = 0;
 	for (int i = 0; i < nc[0]; i++)
 		for (int j = 0; j < nc[1]; j++)
 			for (int k = 0; k < nc[2]; k++)
@@ -115,6 +141,11 @@ void writeAtoms(char* output, int *nc, double *lc, int una, double *x, double *y
 						else if (args.outMode == 1)
 						{
 							fprintf(fout,"%f %f %f\n",xx/box[0],yy/box[1],zz/box[2]);
+						}
+						else if (args.outMode == 2)
+						{
+							n++;
+							fprintf(fout,"%i %i %f %f %f\n",n,symbol[l],xx,yy,zz);
 						}
 					}
 				}
@@ -194,12 +225,13 @@ void NaCl(char* output, int* nc, double a)
 {
 	printf("NaCl\n");
 	int una = 8;
+	int ne = 2;
 	double x[8] = {0.0,0.5,0.5,0.0,0.5,0.0,0.0,0.5};
 	double y[8] = {0.0,0.5,0.0,0.5,0.5,0.0,0.5,0.0};
 	double z[8] = {0.0,0.0,0.5,0.5,0.5,0.5,0.0,0.0};
 	int symbol[8] = {1,1,1,1,2,2,2,2}; 
 	double lc[3] = {a,a,a};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 
@@ -207,36 +239,39 @@ void SP(char* output, int* nc, double a,double b, double c)
 {
 	printf("SP: Simple Cubic\n");
 	int una = 1;
+	int ne = 1;
 	double x[1] = {0.0};
 	double y[1] = {0.0};
 	double z[1] = {0.0};
 	int symbol[1] = {1}; 
 	double lc[3] = {a,b,c};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 void FCC(char* output, int* nc, double a)
 {
 	printf("FCC\n");
 	int una = 4;
+	int ne = 1;
 	double x[4] = {0.0,0.5,0.5,0.0};
 	double y[4] = {0.0,0.5,0.0,0.5};
 	double z[4] = {0.0,0.0,0.5,0.5};
 	int symbol[4] = {1,1,1,1};
 	double lc[3] = {a,a,a};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 void BCC(char* output, int* nc, double a)
 {
 	printf("BCC\n");
 	int una = 2;
+	int ne = 1;
 	double x[2] = {0.0,0.5};
 	double y[2] = {0.0,0.5};
 	double z[2] = {0.0,0.5};
 	int symbol[2] = {1,1};
 	double lc[3] = {a,a,a};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 void HCP(double c, char* output, int* nc, double a)
@@ -249,28 +284,31 @@ void HCP(double c, char* output, int* nc, double a)
 	lc[1] = a;
 	lc[2] = c;
 	int una = 4;
+	int ne = 1;
 	double x[4] = {0.33333,0.16667,0.66667,0.833330};
 	double y[4] = {0.0,0.5,0.0,0.5};
 	double z[4] = {0.25,0.75,0.75,0.25};
 	int symbol[4] = {1,1,1,1};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 void Diamond(char* output, int* nc, double a)
 {
 	printf("Diamond\n");
 	int una = 8;
+	int ne = 1;
 	double x[8] = {0.00,0.50,0.50,0.00,0.25,0.75,0.75,0.25};
 	double y[8] = {0.00,0.50,0.00,0.50,0.25,0.75,0.25,0.75};
 	double z[8] = {0.00,0.00,0.50,0.50,0.25,0.25,0.75,0.75};
 	int symbol[8] = {1,1,1,1,1,1,1,1};
 	double lc[3] = {a,a,a};
-	writeAtoms(output,nc,lc,una,x,y,z,symbol);
+	writeAtoms(output,nc,lc,una,x,y,z,symbol,ne);
 }
 
 struct RR_data
 {
 	int una;
+	int ne;
 	double* x;
 	double* y;
 	double* z;
@@ -357,6 +395,7 @@ void read_data(char *input)
 	}
 
 	xyz_data.una = na;
+	xyz_data.ne = ne;
 	xyz_data.x = x;
 	xyz_data.y = y;
 	xyz_data.z = z;
@@ -414,7 +453,7 @@ void RR(char* input, char* output, int* nc)
 void displayUsage(char* bin)
 {
 	puts("v1.2");
-	printf("Usage: %s  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] -o output\n", bin);
+	printf("Usage: %s  [-p c]  [-f] [-b] [-d] [-n] [-a lattice_constant] [-r file.data] -x nx -y ny -z nz [--cfg] [--custom] [--data] -o output\n", bin);
 	printf("Example: %s -f -a 3.615 -x 50 -y 50 -z 50  -o singleCu.custom\n",bin);
 	printf("Example: %s -p 5.21033 -a 3.20927 -x 30 -y 50 -z 30 --cfg -o singleMg.cfg\n",bin);
 	puts( "    -c, cP: simple cubic " );
@@ -429,6 +468,7 @@ void displayUsage(char* bin)
 	puts( "    -h, print help" );
 	puts( "    --cfg, output in .cfg format" );
 	puts( "    --custom, output in LAMMPS .custom format" );
+	puts( "    --data, output in .data format" );
 }
 
 
@@ -458,6 +498,7 @@ int main(int argc, char* argv[])
 			case 'h': // just go to '?'
 			case 0: args.outMode = 0; break; // custom
 			case 1: args.outMode = 1; break; // cfg
+			case 5: args.outMode = 2; break; // data
 			case 2: args.a = atof(optarg); break; // Lattice parameter a
 			case 3: args.b = atof(optarg); break; // Lattice parameter b
 			case 4: args.c = atof(optarg); break; // Lattice parameter c
